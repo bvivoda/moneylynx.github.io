@@ -32,7 +32,6 @@ function Dashboard({ C, data, setTxs, year, user, lists, setPage, setTxFilter, o
   // A = (x - y) / dani_do_kraja_mjeseca - B
   const [dlSavingsEdit, setDlSavingsEdit] = useState(false);
   const [dlDetailOpen, setDlDetailOpen] = useState(false); // savings detail cards open by default
-  const [dlHelpOpen, setDlHelpOpen]     = useState(false); // help modal for daily limit gauge
   const [dlSavingsInput, setDlSavingsInput] = useState("");
   const [dlSavingsPeriod, setDlSavingsPeriod] = useState(() => prefs?.plannedSavingsPeriod || "monthly");
 
@@ -498,81 +497,30 @@ function Dashboard({ C, data, setTxs, year, user, lists, setPage, setTxFilter, o
                     </div>
                   </div>
                 </div>
-                <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-                  {/* Info button — opens help modal */}
-                  <button onClick={() => setDlHelpOpen(true)} aria-label={t("Više info")}
-                    style={{ width:28, height:28, borderRadius:"50%", background:`${C.textMuted}15`, border:`1px solid ${C.textMuted}30`, color:C.textSub, fontSize:14, fontWeight:800, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, padding:0 }}>
-                    i
-                  </button>
-                  {/* Savings edit button */}
-                  <button onClick={() => {
-                      if (dlDetailOpen && dlSavingsEdit) {
-                        setDlDetailOpen(false); setDlSavingsEdit(false);
-                      } else {
-                        setDlDetailOpen(true); setDlSavingsEdit(true);
-                        setDlSavingsInput(plannedSavingsRaw > 0 ? String(plannedSavingsRaw) : "");
-                        setDlSavingsPeriod(savedPeriod);
-                      }
-                    }}
-                    style={{ display:"flex", alignItems:"center", gap:5, padding:"0 12px", height:36, width:110, justifyContent:"center", background:`${C.accent}15`, border:`1px solid ${C.accent}35`, borderRadius:8, cursor:"pointer", flexShrink:0, fontSize:11, fontWeight:700, color:C.accent }}>
-                    <Ic n="wallet" s={13} c={C.accent}/>
-                    <span>{t("Štednja")}</span>
-                  </button>
-                </div>
+                {/* Savings edit button */}
+                <button onClick={() => {
+                    if (dlDetailOpen && dlSavingsEdit) {
+                      // Both open → close both
+                      setDlDetailOpen(false); setDlSavingsEdit(false);
+                    } else {
+                      // Open both
+                      setDlDetailOpen(true); setDlSavingsEdit(true);
+                      setDlSavingsInput(plannedSavingsRaw > 0 ? String(plannedSavingsRaw) : "");
+                      setDlSavingsPeriod(savedPeriod);
+                    }
+                  }}
+                  style={{ display:"flex", alignItems:"center", gap:5, padding:"0 12px", height:36, width:110, justifyContent:"center", background:`${C.accent}15`, border:`1px solid ${C.accent}35`, borderRadius:8, cursor:"pointer", flexShrink:0, fontSize:11, fontWeight:700, color:C.accent }}>
+                  <Ic n="wallet" s={13} c={C.accent}/>
+                  <span>{t("Štednja")}</span>
+                </button>
               </div>
 
-              {/* Main row: number + gauge side-by-side */}
-              <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:10 }}>
-                <div style={{ flex:1, minWidth:0 }}>
-                  <div style={{ display:"flex", alignItems:"flex-end", gap:6 }}>
-                    <div style={{ fontSize:32, fontWeight:800, fontFamily:"'JetBrains Mono',monospace", color:dlColor, lineHeight:1 }}>
-                      {dlGood ? "" : "-"}{fmt(Math.abs(dailyLimit))}
-                    </div>
-                    <div style={{ fontSize:14, color:dlColor, marginBottom:4, fontWeight:700, opacity:.75 }}>{t("/ dan")}</div>
-                  </div>
+              {/* Main daily limit number */}
+              <div style={{ display:"flex", alignItems:"flex-end", gap:8, marginBottom:10 }}>
+                <div style={{ fontSize:36, fontWeight:800, fontFamily:"'JetBrains Mono',monospace", color:dlColor, lineHeight:1 }}>
+                  {dlGood ? "" : "-"}{fmt(Math.abs(dailyLimit))}
                 </div>
-                {/* SVG Gauge — clickable to open help */}
-                <button onClick={() => setDlHelpOpen(true)} aria-label={t("Više info")}
-                  style={{ background:"none", border:"none", padding:0, cursor:"pointer", flexShrink:0 }}>
-                  {(() => {
-                    // Gauge mapping: -20€/day → 0%, 0€ → 50%, +40€ → 100%
-                    const min = -20, max = 40;
-                    const pct = Math.max(0, Math.min(1, (dailyLimit - min) / (max - min)));
-                    const angle = -90 + pct * 180; // -90 (left) to 90 (right)
-                    const rad = angle * Math.PI / 180;
-                    const cx = 50, cy = 50;
-                    const needleLen = 32;
-                    const nx = cx + needleLen * Math.sin(rad);
-                    const ny = cy - needleLen * Math.cos(rad);
-                    // bubble offset along needle direction
-                    const bx = cx + (needleLen + 6) * Math.sin(rad);
-                    const by = cy - (needleLen + 6) * Math.cos(rad);
-                    return (
-                      <svg viewBox="0 0 100 65" style={{ width:110, height:72, display:"block" }}>
-                        {/* Background arc */}
-                        <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke={`${C.border}`} strokeWidth="6" strokeLinecap="round"/>
-                        {/* Green arc — good zone (left + middle) */}
-                        <path d="M 10 50 A 40 40 0 0 1 68 17" fill="none" stroke={C.income} strokeWidth="6" strokeLinecap="round"/>
-                        {/* Red arc — warning/overspend (right) */}
-                        <path d="M 68 17 A 40 40 0 0 1 90 50" fill="none" stroke={C.expense} strokeWidth="6" strokeLinecap="round"/>
-                        {/* Tick marks */}
-                        <text x="10" y="62" fontSize="7" fill={C.textMuted} textAnchor="middle">-20</text>
-                        <text x="50" y="14" fontSize="7" fill={C.textMuted} textAnchor="middle" fontWeight="700">10</text>
-                        <text x="90" y="62" fontSize="7" fill={C.textMuted} textAnchor="middle">40</text>
-                        {/* Needle */}
-                        <line x1={cx} y1={cy} x2={nx} y2={ny} stroke={dlColor} strokeWidth="3" strokeLinecap="round"/>
-                        <circle cx={cx} cy={cy} r="4" fill={dlColor}/>
-                        {/* Warning bubble at needle tip */}
-                        {dailyLimit < 20 && (
-                          <>
-                            <circle cx={bx} cy={by} r="5" fill={C.expense} stroke={C.card} strokeWidth="1.5"/>
-                            <text x={bx} y={by + 2} fontSize="6.5" fill="#fff" fontWeight="800" textAnchor="middle">!</text>
-                          </>
-                        )}
-                      </svg>
-                    );
-                  })()}
-                </button>
+                <div style={{ fontSize:16, color:dlColor, marginBottom:5, fontWeight:700, opacity:.75 }}>{t("/ dan")}</div>
               </div>
 
               {/* Status message */}
@@ -784,52 +732,6 @@ function Dashboard({ C, data, setTxs, year, user, lists, setPage, setTxFilter, o
           </>
         )}
       </div>
-
-      {/* ── Daily Limit help modal ────────────────────────────── */}
-      {dlHelpOpen && (
-        <div onClick={e => { if (e.target === e.currentTarget) setDlHelpOpen(false); }}
-          style={{ position:"fixed", inset:0, background:"rgba(0,0,0,.7)", zIndex:200, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
-          <div style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:18, width:"100%", maxWidth:420, maxHeight:"80vh", display:"flex", flexDirection:"column", overflow:"hidden", boxShadow:"0 8px 40px rgba(0,0,0,.5)" }}>
-            <div style={{ display:"flex", alignItems:"center", gap:10, padding:"16px 18px 12px", borderBottom:`1px solid ${C.border}`, background:C.card }}>
-              <div style={{ width:38, height:38, borderRadius:10, background:`${dlColor}25`, border:`1px solid ${dlColor}40`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-                <Ic n="gauge" s={20} c={dlColor}/>
-              </div>
-              <div style={{ flex:1 }}>
-                <div style={{ fontSize:16, fontWeight:700, color:C.text }}>{t("Dnevni limit potrošnje")}</div>
-                <div style={{ fontSize:11, color:C.textMuted, marginTop:1 }}>{t("Kako funkcionira?")}</div>
-              </div>
-              <button onClick={() => setDlHelpOpen(false)} style={{ background:C.cardAlt, border:`1px solid ${C.border}`, borderRadius:9, padding:"7px 11px", cursor:"pointer", fontSize:13, color:C.textMuted, fontWeight:700 }}>✕</button>
-            </div>
-            <div style={{ overflowY:"auto", padding:"14px 18px 20px", fontSize:13, color:C.text, lineHeight:1.6 }}>
-              <p style={{ marginBottom:10 }}>
-                {t("Dnevni limit pokazuje koliko € možeš trošiti svaki dan do sljedeće plaće, a da ostaneš u plusu.")}
-              </p>
-              <div style={{ fontSize:11, fontWeight:700, color:C.textMuted, textTransform:"uppercase", letterSpacing:.5, marginTop:14, marginBottom:6 }}>{t("Formula")}</div>
-              <div style={{ background:C.cardAlt, border:`1px solid ${C.border}`, borderRadius:10, padding:"10px 12px", fontSize:12, fontFamily:"'JetBrains Mono',monospace", color:C.text, marginBottom:14 }}>
-                ({t("Primici")} − {t("Troškovi")} − {t("Štednja")}) / {t("dana do plaće")}
-              </div>
-              <div style={{ fontSize:11, fontWeight:700, color:C.textMuted, textTransform:"uppercase", letterSpacing:.5, marginBottom:6 }}>{t("Zone na mjeraču")}</div>
-              <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
-                <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                  <span style={{ width:14, height:14, borderRadius:"50%", background:C.income, flexShrink:0 }}/>
-                  <span style={{ fontSize:12 }}>{t("Zelena zona — možeš normalno trošiti.")}</span>
-                </div>
-                <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                  <span style={{ width:14, height:14, borderRadius:"50%", background:C.warning, flexShrink:0 }}/>
-                  <span style={{ fontSize:12 }}>{t("Žuta — pažnja, mali prostor.")}</span>
-                </div>
-                <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                  <span style={{ width:14, height:14, borderRadius:"50%", background:C.expense, flexShrink:0 }}/>
-                  <span style={{ fontSize:12 }}>{t("Crvena — prekoračenje, smanji rashode.")}</span>
-                </div>
-              </div>
-              <div style={{ fontSize:11, color:C.textMuted, marginTop:14, fontStyle:"italic" }}>
-                {t("Savjet: postavi mjesečnu štednju klikom na Štednja gumb za realniji limit.")}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
